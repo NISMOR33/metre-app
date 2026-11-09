@@ -1,0 +1,26 @@
+name: Build IPA
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+jobs:
+  build:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Générer le projet Xcode
+        run: brew install xcodegen && xcodegen generate
+      - name: Compiler (sans signature)
+        run: |
+          xcodebuild -project Metre.xcodeproj -scheme Metre -configuration Release \
+            -sdk iphoneos -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+      - name: Créer l'IPA
+        run: |
+          mkdir Payload
+          cp -R build/Build/Products/Release-iphoneos/Metre.app Payload/
+          zip -r Metre.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Metre-ipa
+          path: Metre.ipa
